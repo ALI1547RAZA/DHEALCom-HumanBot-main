@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpml:process name="PazienteProcess" xmlns:bpml="http://www.bpmi.org/2002/03/bpml">
+
+  <!-- Partecipante -->
+  <bpml:participants>
+    <bpml:participant name="Paziente" />
+  </bpml:participants>
+
+  <!-- Variabili di processo -->
+  <bpml:context>
+    <bpml:property name="audioBlob" />
+    <bpml:property name="promptText" />
+    <bpml:property name="intentJson" />
+    <bpml:property name="parsedResult" />
+    <bpml:property name="transformedText" />
+    <bpml:property name="outputAudio" />
+  </bpml:context>
+
+  <!-- Attività principali in sequenza -->
+  <bpml:activity name="mainSequence">
+    <bpml:sequence>
+
+      <!-- toText -->
+      <bpml:activity name="toText">
+        <bpml:input property="audioBlob" />
+        <bpml:invoke partner="SpeechService" operation="getPrompt" />
+        <bpml:faultHandler>
+          <bpml:catchAll>
+            <bpml:assign property="parsedResult" expression="errore" />
+            <bpml:activity name="fallbackToSpeech">
+              <bpml:input property="parsedResult" />
+              <bpml:invoke partner="SpeechService" operation="toSpeech" />
+              <bpml:assign property="outputAudio" expression="response.result" />
+            </bpml:activity>
+          </bpml:catchAll>
+        </bpml:faultHandler>
+        <bpml:assign property="promptText" expression="response.result" />
+      </bpml:activity>
+
+      <!-- toJson -->
+      <bpml:activity name="toJson">
+        <bpml:input property="promptText"/>
+        <bpml:invoke partner="JsonService" operation="toJson" />
+        <bpml:faultHandler>
+          <bpml:catchAll>
+            <bpml:assign property="parsedResult" expression="errore" />
+            <bpml:activity name="fallbackToSpeech">
+              <bpml:input property="parsedResult" />
+              <bpml:invoke partner="SpeechService" operation="toSpeech" />
+              <bpml:assign property="outputAudio" expression="response.result" />
+            </bpml:activity>
+          </bpml:catchAll>
+        </bpml:faultHandler>
+        <bpml:assign property="intentJson" expression="response.result" />
+      </bpml:activity>
+
+      <!-- parseOutput -->
+      <bpml:activity name="parseOutput">
+        <bpml:input property="intentJson" />
+        <bpml:invoke partner="ParserService" operation="parseOutput" />
+        <bpml:faultHandler>
+          <bpml:catchAll>
+            <bpml:assign property="parsedResult" expression="errore" />
+            <bpml:activity name="fallbackToSpeech">
+              <bpml:input property="parsedResult" />
+              <bpml:invoke partner="SpeechService" operation="toSpeech" />
+              <bpml:assign property="outputAudio" expression="response.result" />
+            </bpml:activity>
+          </bpml:catchAll>
+        </bpml:faultHandler>
+        <bpml:assign property="parsedResult" expression="response.result" />
+      </bpml:activity>
+
+      <!-- transformText -->
+      <bpml:activity name="transformText">
+        <bpml:input property="parsedResult" />
+        <bpml:invoke partner="TransformService" operation="transformText" />
+        <bpml:faultHandler>
+          <bpml:catchAll>
+            <bpml:assign property="parsedResult" expression="errore" />
+            <bpml:activity name="fallbackToSpeech">
+              <bpml:input property="parsedResult" />
+              <bpml:invoke partner="SpeechService" operation="toSpeech" />
+              <bpml:assign property="outputAudio" expression="response.result" />
+            </bpml:activity>
+          </bpml:catchAll>
+        </bpml:faultHandler>
+        <bpml:assign property="transformedText" expression="response.result" />
+      </bpml:activity>
+
+      <!-- toSpeech -->
+      <bpml:activity name="toSpeech">
+        <bpml:input property="transformedText" />
+        <bpml:invoke partner="SpeechService" operation="toSpeech" />
+        <bpml:faultHandler>
+          <bpml:catchAll>
+            <bpml:assign property="parsedResult" expression="errore" />
+            <bpml:activity name="fallbackToSpeech">
+              <bpml:input property="parsedResult" />
+              <bpml:invoke partner="SpeechService" operation="toSpeech" />
+              <bpml:assign property="outputAudio" expression="response.result" />
+            </bpml:activity>
+          </bpml:catchAll>
+        </bpml:faultHandler>
+        <bpml:assign property="outputAudio" expression="response.result" />
+      </bpml:activity>
+
+    </bpml:sequence>
+  </bpml:activity>
+
+</bpml:process>
